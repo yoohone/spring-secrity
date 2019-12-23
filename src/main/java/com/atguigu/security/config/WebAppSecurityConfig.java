@@ -50,6 +50,7 @@ public class WebAppSecurityConfig extends WebSecurityConfigurerAdapter {
                 //指定用户名的请求参数名
                 .usernameParameter("loginacct")
                 //指定密码的请求参数名
+                //credential表示密码的意思
                 .passwordParameter("credential")
                 //指定登陆成功以后前往的地址
                 .defaultSuccessUrl("/main.html")
@@ -62,14 +63,9 @@ public class WebAppSecurityConfig extends WebSecurityConfigurerAdapter {
                 .and()
                 .exceptionHandling()
                 //.accessDeniedPage("/to/no/auth/page.html")
-                .accessDeniedHandler(new AccessDeniedHandler() {
-                    @Override
-                    public void handle(HttpServletRequest request, HttpServletResponse response,
-                                       AccessDeniedException accessDeniedException) throws IOException,
-                            ServletException {
-                        request.setAttribute("message", accessDeniedException.getMessage());
-                        request.getRequestDispatcher("/WEB-INF/views/no_auth.jsp").forward(request, response);
-                    }
+                .accessDeniedHandler((request, response, accessDeniedException) -> {
+                    request.setAttribute("message", accessDeniedException.getMessage());
+                    request.getRequestDispatcher("/WEB-INF/views/no_auth.jsp").forward(request, response);
                 })
         ;
     }
