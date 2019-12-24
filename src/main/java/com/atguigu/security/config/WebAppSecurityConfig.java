@@ -1,17 +1,16 @@
 package com.atguigu.security.config;
 
+import com.atguigu.security.service.AppUserDetailService;
+import com.atguigu.security.service.PasswordEncoderService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.security.web.authentication.rememberme.JdbcTokenRepositoryImpl;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
+import javax.sql.DataSource;
 
 
 /**
@@ -21,8 +20,21 @@ import java.io.IOException;
 @EnableWebSecurity
 public class WebAppSecurityConfig extends WebSecurityConfigurerAdapter {
 
+    @Autowired
+    private DataSource dataSource;
+
+    @Autowired
+    private AppUserDetailService appUserDetailService;
+
+    @Autowired
+    private PasswordEncoderService passwordEncoderService;
+
     @Override
     protected void configure(HttpSecurity security) throws Exception {
+
+        JdbcTokenRepositoryImpl tokenRepository = new JdbcTokenRepositoryImpl();
+        tokenRepository.setDataSource(dataSource);
+
         //对请求进行授权
         security.authorizeRequests()
                 //使用ANT风格设置要授权的URL地址
@@ -67,32 +79,36 @@ public class WebAppSecurityConfig extends WebSecurityConfigurerAdapter {
                     request.setAttribute("message", accessDeniedException.getMessage());
                     request.getRequestDispatcher("/WEB-INF/views/no_auth.jsp").forward(request, response);
                 })
+                .and()
+                .rememberMe()
+                .tokenRepository(tokenRepository)
         ;
     }
 
     @Override
     protected void configure(AuthenticationManagerBuilder builder) throws Exception {
-
-        builder
-                //在内存中进行认证（通常不会用于实际开发）
-                .inMemoryAuthentication()
-                //指定用户名
-                .withUser("韦小宝")
-                //指定密码
-                .password("123123")
-                //指定当前账号具备的角色
-                .roles("学徒")
-                //指定当前账号具备的权限
-                //.authorities("SAVE", "EAIT")
-                .and()
-                .withUser("郭靖")
-                .password("456456")
-                .roles("大师")
-                //.authorities("SAVE", "EAIT")
-                .and()
-                .withUser("张三丰")
-                .password("520520")
-                .roles("宗师")
-        ;
+        //将用封装好的账户信息appUserDetailService对象去实现数据库的认证
+        builder.userDetailsService(appUserDetailService).passwordEncoder(passwordEncoderService);
+        //builder
+        //        //在内存中进行认证（通常不会用于实际开发）
+        //        .inMemoryAuthentication()
+        //        //指定用户名
+        //        .withUser("韦小宝")
+        //        //指定密码
+        //        .password("123123")
+        //        //指定当前账号具备的角色
+        //        .roles("学徒")
+        //        //指定当前账号具备的权限
+        //        //.authorities("SAVE", "EAIT")
+        //        .and()
+        //        .withUser("郭靖")
+        //        .password("456456")
+        //        .roles("大师")
+        //        //.authorities("SAVE", "EAIT")
+        //        .and()
+        //        .withUser("张三丰")
+        //        .password("520520")
+        //        .roles("宗师")
+        //;
     }
 }
